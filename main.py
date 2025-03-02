@@ -13,34 +13,39 @@ URL = "https://programmer100.pythonanywhere.com/tours/"
 connection = sqlite3.connect("data.db")
 cursor = connection.cursor()
 
-def scrape(url):
-    """Scrape the page source from the URL"""
-    response = requests.get(url)
-    source = response.text
-    return source
 
-def extract(source):
-    extractor = selectorlib.Extractor.from_yaml_file("extract.yaml")
-    value = extractor.extract(source)["tours"]
-    return value
+class Event:
+    def scrape(self,url):
+        """Scrape the page source from the URL"""
+        response = requests.get(url)
+        source = response.text
+        return source
 
-def send_email(subject, message):
-    host = "smtp.gmail.com"
-    port = 465
+    def extract(self,source):
+        extractor = selectorlib.Extractor.from_yaml_file("extract.yaml")
+        value = extractor.extract(source)["tours"]
+        return value
 
-    username = "x@gmail.com"
-    password = "password"
 
-    receiver = "x@gmail.com"
-    context = ssl.create_default_context()
+class Email:
+    def send_email(self,subject, message):
+        host = "smtp.gmail.com"
+        port = 465
 
-    # Format the email message manually
-    email_message = f"Subject: {subject}\n\n{message}"
+        username = "x@gmail.com"
+        password = "password"
 
-    with smtplib.SMTP_SSL(host, port, context=context) as server:
-        server.login(username, password)
-        server.sendmail(username, receiver, email_message)
-    print("Email was sent!")
+        receiver = "x@gmail.com"
+        context = ssl.create_default_context()
+
+        # Format the email message manually
+        email_message = f"Subject: {subject}\n\n{message}"
+
+        with smtplib.SMTP_SSL(host, port, context=context) as server:
+            server.login(username, password)
+            server.sendmail(username, receiver, email_message)
+        print("Email was sent!")
+
 
 def store(extracted):
     row = extracted.split(",")
@@ -62,8 +67,9 @@ def read(extracted):
 
 if __name__ == "__main__":
     while True:
-        scraped = scrape(URL)
-        extracted = extract(scraped)
+        event = Event()
+        scraped = event.scrape(URL)
+        extracted = event.extract(scraped)
         print(extracted)
 
 
@@ -71,5 +77,6 @@ if __name__ == "__main__":
          row = read(extracted)
          if not row:
             store(extracted)
-            send_email(subject="New Event!", message="Hello, a new event was found!")
+            email = Email()
+            email.send_email(subject="New Event!", message="Hello, a new event was found!")
          time.sleep(2)
